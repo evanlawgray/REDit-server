@@ -15,12 +15,12 @@ module.exports = function(router) {
 
       if(err) return res.status(500).send();
 
-      const newData = weeks.rows.reduce((acc, object, i) => {
+      const newData = weeks.rows.reduce(( acc, object, i ) => {
         let isDuplicateWeek = acc.filter((obj) => {
          return obj.week === object.weektitle;
         });
 
-        if(!acc.length || !isDuplicateWeek.length) {
+        if( !acc.length || !isDuplicateWeek.length ) {
           acc.push({week: object.weektitle, lessons: [{id: object.lessonid, title: object.lessontitle}]});
           return acc;
         }
@@ -39,24 +39,89 @@ module.exports = function(router) {
   });
 
   router.get( '/lessons/:lesson_id/posts', ( req, res ) => {
-    const mockdata = fs.readFileSync( path.resolve( __dirname, './../../mockdata.json' ), 'utf-8' );
-    const posts = JSON.parse( mockdata ).posts;
+    let lessonId = req.params.lesson_id;
 
-    if( posts.length ) {
-      res.status(200).send( posts );
-    }
-    else {
-      res.status(404).send();
-    }
-  })
+    pool.query(
+      `SELECT * FROM posts
+          INNER JOIN posttags
+              ON posts.id = post_id
+          WHERE lesson_id = ${lessonId};`, ( err, posts ) => {
+
+        if(err) return response.status(500).send();
+
+        pool.query(`SELECT * FROM tags`, ( err, tags ) => {
+
+          if(err) return response.status(500).send();
+
+          const newPosts = posts.rows.reduce(( acc, post ) => {
+
+            let duplicatePosts = acc.filter((item) => {
+              return item.post_id === post.post_id;
+            });
+
+            if(!acc.length || !duplicatePosts.length) {
+              post.tag_ids = [post.tag_id];
+              post.tags = [];
+              acc.push(post);
+            }
+
+            if(duplicatePosts.length) {
+              acc.forEach(( accPost ) => {
+                if(accPost.post_id === post.post_id) {
+                  accPost.tag_ids.push(post.tag_id)
+                }
+              });
+            }
+
+            return acc;
+          }, [] );
+
+          tags.rows.forEach(( tag ) => {
+            newPosts.forEach(( post ) => {
+              post.tag_ids.forEach(( tagId ) => {
+                if(tag.id === tagId ) post.tags.push(tag.tag);
+              });
+            });
+          });
+
+          res.status(200).json(newPosts);
+        });
+    });
+  });
+
+
+                    // INNER JOIN tags
+                    //     ON posttags.tag_id = tags.id
+                    //     WHERE lesson_id = ${lessonId};`, (err, posts) => {
+      // if(err) return res.status(500).send();
+
+      // const newPosts = posts.rows.reduce((acc, post) => {
+
+      //   let isDuplicate = acc.filter((item) => {
+      //     return item.post_id === post.post_id;
+      //   });
+
+      //   if(!acc.length || !isDuplicate.length) {
+      //     acc.push(post);
+      //   }
+
+      //   acc.forEach((obj, i) => {
+      //     if(obj.post_id === post.post_id) {
+      //       console.log(acc[i].tag);
+      //       acc[i].tag = [acc[i].tag, post.tag];
+      //     }
+      //   })
+
+      //   return acc;
+      // }, []);
 
   router.post( '/posts/:post_id/votes', ( req, res ) => {
-    console.log(req.body);
-  })
+
+  });
 
   router.post( '/posts/', ( req, res ) => {
 
-  })
+  });
 
   return router;
 }
