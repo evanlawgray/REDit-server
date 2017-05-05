@@ -47,11 +47,11 @@ module.exports = function(router) {
               ON posts.id = post_id
           WHERE lesson_id = ${lessonId};`, ( err, posts ) => {
 
-        if(err) return response.status(500).send();
+        if(err) return res.status(500).send();
 
         pool.query(`SELECT * FROM tags`, ( err, tags ) => {
 
-          if(err) return response.status(500).send();
+          if(err) return res.status(500).send();
 
           const newPosts = posts.rows.reduce(( acc, post ) => {
 
