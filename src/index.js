@@ -1,9 +1,13 @@
 const express = require('express');
 const app = express();
 const cors = require('cors');
+const bodyParser = require('body-parser');
 const json = require('body-parser').json;
 const Pool = require('pg').Pool;
 const path = require('path');
+
+const cookieParser = require('cookie-parser');
+const jwt = require('jsonwebtoken');
 
 const pool = new Pool({
   user: 'owner',
@@ -23,6 +27,8 @@ const authRoutes = require('./routes/auth');
 
 app.use(cors());
 app.use(json());
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(cookieParser());
 
 app.use('/api', apiRoutes(apiRouter));
 app.use('/auth', authRoutes(authRouter));

@@ -6,36 +6,48 @@ const pool = require('../index');
 
 module.exports = function(router) {
 
-  router.use(bodyParser.json());
-
   router.get( '/weeks', ( req, res ) => {
-    pool.query(`SELECT lessons.title AS lessontitle, lessons.id as lessonid, weeks.title AS weektitle FROM weeks
+
+    if(!req.cookies.redit_session) return res.status(403).send();
+
+    const session = jwt.decode(req.cookes.redit_session);
+
+    pool.query(`SELECT * FROM users WHERE email=${session.user_email};`)
+      .then((err, users) => {
+        if(users && users.rows.length) {
+
+          pool.query(`SELECT lessons.title AS lessontitle, lessons.id as lessonid, weeks.title AS weektitle FROM weeks
                           INNER JOIN lessons
                               ON weeks.id = lessons.week_id`, (err, weeks) => {
 
-      if(err) return res.status(500).send();
+          if(err) return res.status(500).send();
 
-      const newData = weeks.rows.reduce(( acc, object, i ) => {
-        let isDuplicateWeek = acc.filter((obj) => {
-         return obj.week === object.weektitle;
-        });
+          const newData = weeks.rows.reduce(( acc, object, i ) => {
+            let isDuplicateWeek = acc.filter((obj) => {
+            return obj.week === object.weektitle;
+            });
 
-        if( !acc.length || !isDuplicateWeek.length ) {
-          acc.push({week: object.weektitle, lessons: [{id: object.lessonid, title: object.lessontitle}]});
-          return acc;
+            if( !acc.length || !isDuplicateWeek.length ) {
+              acc.push({week: object.weektitle, lessons: [{id: object.lessonid, title: object.lessontitle}]});
+              return acc;
+            }
+
+            acc.forEach((accItem, i) => {
+              if(accItem.week === object.weektitle) {
+                acc[i].lessons.push({id: object.lessonid, title: object.lessontitle});
+              }
+            });
+
+            return acc;
+            }, []);
+
+            return res.status(200).json(newData);
+          });
+        } else {
+
+          return res.status(403).send();
         }
-
-        acc.forEach((accItem, i) => {
-          if(accItem.week === object.weektitle) {
-            acc[i].lessons.push({id: object.lessonid, title: object.lessontitle});
-          }
-        });
-
-        return acc;
-      }, []);
-
-      return res.status(200).json(newData);
-    });
+      });
   });
 
   router.get( '/lessons/:lesson_id/posts', ( req, res ) => {
@@ -88,32 +100,6 @@ module.exports = function(router) {
         });
     });
   });
-
-
-                    // INNER JOIN tags
-                    //     ON posttags.tag_id = tags.id
-                    //     WHERE lesson_id = ${lessonId};`, (err, posts) => {
-      // if(err) return res.status(500).send();
-
-      // const newPosts = posts.rows.reduce((acc, post) => {
-
-      //   let isDuplicate = acc.filter((item) => {
-      //     return item.post_id === post.post_id;
-      //   });
-
-      //   if(!acc.length || !isDuplicate.length) {
-      //     acc.push(post);
-      //   }
-
-      //   acc.forEach((obj, i) => {
-      //     if(obj.post_id === post.post_id) {
-      //       console.log(acc[i].tag);
-      //       acc[i].tag = [acc[i].tag, post.tag];
-      //     }
-      //   })
-
-      //   return acc;
-      // }, []);
 
   router.post( '/posts/:post_id/votes', ( req, res ) => {
 
