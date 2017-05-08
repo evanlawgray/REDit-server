@@ -8,9 +8,11 @@ module.exports = function(router) {
 
   router.get( '/weeks', ( req, res ) => {
 
-    if(!req.cookies.redit_session) return res.status(403).send();
+    if(!req.cookies.redit_session) return res.status(403).send(req.cookies.redit_session);
 
-    const session = jwt.decode(req.cookes.redit_session);
+    const session = jwt.decode(req.cookies.redit_session);
+
+    console.log(session);
 
     pool.query(`SELECT * FROM users WHERE email=${session.user_email};`)
       .then((err, users) => {
