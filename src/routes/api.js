@@ -4,6 +4,8 @@ const bodyParser = require('body-parser');
 
 const pool = require('../index');
 
+const jwt = require('jsonwebtoken');
+
 module.exports = function(router) {
 
   router.get( '/weeks', ( req, res ) => {
@@ -12,10 +14,9 @@ module.exports = function(router) {
 
     const session = jwt.decode(req.cookies.redit_session);
 
-    console.log(session);
-
-    pool.query(`SELECT * FROM users WHERE email=${session.user_email};`)
+    pool.query(`SELECT * FROM users WHERE email=${session.user_email} ESCAPE '@';`)
       .then((err, users) => {
+        console.log(users);
         if(users && users.rows.length) {
 
           pool.query(`SELECT lessons.title AS lessontitle, lessons.id as lessonid, weeks.title AS weektitle FROM weeks

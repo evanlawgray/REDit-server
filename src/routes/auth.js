@@ -17,16 +17,14 @@ module.exports = function(router) {
 
         const JWT = jwt.sign(session, '2l3k45j8a-a-0iga', {expiresIn: '2hr'});
 
-        // res.status(200).cookie('redit_session', JWT, {
-        //   secure: false,
-        //   maxAge: 7200000,
-        //   httpOnly: true
-        // }).send(`You've been logged in`);
+        res.status(200).cookie('redit_session', JWT, {
+          secure: false,
+          maxAge: 7200000,
+          httpOnly: true
+        }).send(`You've been logged in`);
 
-        res.cookie('redit_session', 'show me the cookie!');
+        // res.cookie('redit_session', 'show me the cookie!');
 
-        res.status(200).json();
-          // res.status(200).json({ jwt: JWT });
 
         } else res.status(403).send('Invalid username or password...');
       }).catch(err => {
